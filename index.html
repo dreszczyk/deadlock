@@ -1,1 +1,31 @@
-test
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>test</title>
+</head>
+
+<body>
+    <div id="attrs" style="display: pre;"></div>
+    <script>
+        function handleMotionEvent(event) {
+
+            var x = event.accelerationIncludingGravity.x;
+            var y = event.accelerationIncludingGravity.y;
+            var z = event.accelerationIncludingGravity.z;
+            document.getElementById('attrs').innerText = `
+                ${x}
+                ${y}
+                ${z}
+            `;
+            // Do something awesome.
+        }
+
+        window.addEventListener("devicemotion", handleMotionEvent, true);
+    </script>
+</body>
+
+</html>
