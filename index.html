@@ -29,7 +29,7 @@ ${acc}`
                         window.addEventListener("devicemotion", handleDeviceMotion, true);
                         setTimeout(() => {
                             alert('removeEventListener');
-                            window.removeEventListener("devicemotion", handleDeviceMotion);
+                            window.removeEventListener("devicemotion", handleDeviceMotion, true);
                         }, 3000)
                     })
                 });
