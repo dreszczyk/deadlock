@@ -11,7 +11,12 @@
 <body>
     <div id="attrs" style="display: pre;"></div>
     <script>
-        window.screen.orientation.lock('portrait-primary');
+        var lockOrientation = screen.lockOrientation || screen.mozLockOrientation || screen.msLockOrientation;
+        if (lockOrientation("portrait-primary")) {
+            alert('orientation was locked');
+        } else {
+            alert('orientation lock failed');
+        }
         function handleMotionEvent(event) {
             var x = event.accelerationIncludingGravity.x;
             var y = event.accelerationIncludingGravity.y;
