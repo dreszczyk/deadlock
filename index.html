@@ -9,30 +9,32 @@
 </head>
 
 <body>
-    <div id="attrs" style="display: pre;">
-    a
-    a
-    a
-    </div>
+    <div id="attrs" style="display: pre;">aaaaaa</div>
+    <div id="attros" style="display: pre;">bbbbbbb</div>
     <script>
-        function handleMotionEvent(event) {
-            var x = event.accelerationIncludingGravity.x;
-            var y = event.accelerationIncludingGravity.y;
-            var z = event.accelerationIncludingGravity.z;
+        function handleDeviceMotion(event) {
             document.getElementById('attrs').innerText = `
-                ${x}
-                ${y}
-                ${z}
+                event.accelerationIncludingGravity.x: ${event.accelerationIncludingGravity.x}
+                event.accelerationIncludingGravity.y: ${event.accelerationIncludingGravity.y}
+                event.accelerationIncludingGravity.z: ${event.accelerationIncludingGravity.z}
             `;
         }
-        document.onclick = () => {
+        function handleDeviceOrientation(event) {
+            document.getElementById('attros').innerText = `
+                event.alpha: ${event.alpha}
+                event.beta: ${event.beta}
+                event.gamma: ${event.gamma}
+            `;
+        }
+        document.onload = () => {
             var conf = confirm("Fullscreen mode?");
             if (conf) {
                 const request = document.documentElement.requestFullscreen();
                 request.then(() => {
                     const lock = window.screen.orientation.lock('portrait-primary');
                     lock.then(() => {
-                        window.addEventListener("devicemotion", handleMotionEvent, true);
+                        window.addEventListener("devicemotion", handleDeviceMotion, true);
+                        window.addEventListener("ondeviceorientation", handleDeviceOrientation, true);
                     })
                 });
             }
