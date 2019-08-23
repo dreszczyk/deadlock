@@ -11,20 +11,25 @@
 <body>
     <div id="attrs" style="display: pre;"></div>
     <script>
-        const request = document.documentElement.requestFullscreen();
-        request.then(() => {
-            function handleMotionEvent(event) {
-                var x = event.accelerationIncludingGravity.x;
-                var y = event.accelerationIncludingGravity.y;
-                var z = event.accelerationIncludingGravity.z;
-                document.getElementById('attrs').innerText = `
-                    ${x}
-                    ${y}
-                    ${z}
-                `;
+        document.onclick = () => {
+            var conf = confirm("Fullscreen mode?");
+            if (conf) {
+                const request = document.documentElement.requestFullscreen();
+                request.then(() => {
+                    function handleMotionEvent(event) {
+                        var x = event.accelerationIncludingGravity.x;
+                        var y = event.accelerationIncludingGravity.y;
+                        var z = event.accelerationIncludingGravity.z;
+                        document.getElementById('attrs').innerText = `
+                            ${x}
+                            ${y}
+                            ${z}
+                        `;
+                    }
+                    window.addEventListener("devicemotion", handleMotionEvent, true);
+                });
             }
-            window.addEventListener("devicemotion", handleMotionEvent, true);
-        })
+        }
     </script>
 </body>
 
