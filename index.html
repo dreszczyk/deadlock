@@ -9,6 +9,7 @@
 </head>
 
 <body>
+    <button id="start">start!</button>
     <div id="attrs" style="display: pre;">aaaaaa</div>
     <div id="attros" style="display: pre;">bbbbbbb</div>
     <script>
@@ -26,7 +27,7 @@
                 event.gamma: ${event.gamma}
             `;
         }
-        document.onload = () => {
+        document.getElementById('start').addEventListener('click', () => {
             var conf = confirm("Fullscreen mode?");
             if (conf) {
                 const request = document.documentElement.requestFullscreen();
@@ -38,7 +39,7 @@
                     })
                 });
             }
-        }
+        })
     </script>
 </body>
 
