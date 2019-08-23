@@ -10,12 +10,12 @@
 
 <body>
     <button id="start">start!</button>
-    <div id="attrs" style="display: pre;">aaaaaa</div>
+    <div id="attrs" style="display: pre;"></div>
     <script>
         function handleDeviceMotion(event) {
             document.getElementById('attrs').innerText = `
-                ${document.getElementById('attrs').innerText}
-                event.accelerationIncludingGravity.x: ${event.accelerationIncludingGravity.x}, event.accelerationIncludingGravity.y: ${event.accelerationIncludingGravity.y}, event.accelerationIncludingGravity.z: ${event.accelerationIncludingGravity.z}
+${document.getElementById('attrs').innerText}
+event.accelerationIncludingGravity.x: ${event.accelerationIncludingGravity.x}, event.accelerationIncludingGravity.y: ${event.accelerationIncludingGravity.y}, event.accelerationIncludingGravity.z: ${event.accelerationIncludingGravity.z}
             `;
         }
         document.getElementById('start').addEventListener('click', () => {
@@ -26,6 +26,9 @@
                     const lock = window.screen.orientation.lock('portrait-primary');
                     lock.then(() => {
                         window.addEventListener("devicemotion", handleDeviceMotion, true);
+                        setTimeout(() => {
+                            window.removeEventListener("devicemotion", handleDeviceMotion);
+                        }, 3000)
                     })
                 });
             }
