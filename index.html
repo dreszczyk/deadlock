@@ -13,10 +13,10 @@
     <div id="attrs" style="display: pre;"></div>
     <script>
         function handleDeviceMotion(event) {
-            const acc = event.accelerationIncludingGravity.x + event.accelerationIncludingGravity.y + event.accelerationIncludingGravity.z;
             document.getElementById('attrs').innerText = `
-${document.getElementById('attrs').innerText}
-${acc}`
+                ${document.getElementById('attrs').innerText}
+                event.accelerationIncludingGravity.x: ${event.accelerationIncludingGravity.x}, event.accelerationIncludingGravity.y: ${event.accelerationIncludingGravity.y}, event.accelerationIncludingGravity.z: ${event.accelerationIncludingGravity.z}
+            `;
         }
         document.getElementById('start').addEventListener('click', () => {
             var conf = confirm("Fullscreen mode?");
@@ -25,10 +25,8 @@ ${acc}`
                 request.then(() => {
                     const lock = window.screen.orientation.lock('portrait-primary');
                     lock.then(() => {
-                        alert('addEventListener');
                         window.addEventListener("devicemotion", handleDeviceMotion, true);
                         setTimeout(() => {
-                            alert('removeEventListener');
                             window.removeEventListener("devicemotion", handleDeviceMotion, true);
                         }, 3000)
                     })
