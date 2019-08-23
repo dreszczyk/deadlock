@@ -9,25 +9,31 @@
 </head>
 
 <body>
-    <div id="attrs" style="display: pre;"></div>
+    <div id="attrs" style="display: pre;">
+    a
+    a
+    a
+    </div>
     <script>
+        function handleMotionEvent(event) {
+            var x = event.accelerationIncludingGravity.x;
+            var y = event.accelerationIncludingGravity.y;
+            var z = event.accelerationIncludingGravity.z;
+            document.getElementById('attrs').innerText = `
+                ${x}
+                ${y}
+                ${z}
+            `;
+        }
         document.onclick = () => {
             var conf = confirm("Fullscreen mode?");
             if (conf) {
-                screen.orientation.lock('portrait-primary');
                 const request = document.documentElement.requestFullscreen();
                 request.then(() => {
-                    function handleMotionEvent(event) {
-                        var x = event.accelerationIncludingGravity.x;
-                        var y = event.accelerationIncludingGravity.y;
-                        var z = event.accelerationIncludingGravity.z;
-                        document.getElementById('attrs').innerText = `
-                            ${x}
-                            ${y}
-                            ${z}
-                        `;
-                    }
-                    window.addEventListener("devicemotion", handleMotionEvent, true);
+                    const lock = window.screen.orientation.lock('portrait-primary');
+                    lock.then(() => {
+                        window.addEventListener("devicemotion", handleMotionEvent, true);
+                    })
                 });
             }
         }
