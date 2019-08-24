@@ -8,6 +8,7 @@
         "concurrently": "^4.1.2",
         "cors": "^2.8.5",
         "express": "^4.17.1",
+        "express-history-api-fallback": "^2.2.1",
         "lodash": "^4.17.15",
         "nodemon": "^1.19.1",
         "rc-collapse": "^1.11.6",
@@ -21,8 +22,9 @@
         "styled-components": "^4.3.2"
     },
     "scripts": {
-        "start": "concurrently --kill-others \"react-scripts start\" \"nodemon ./src/server/server.js\"",
+        "dev": "concurrently --kill-others \"react-scripts start\" \"nodemon ./src/server/server.js\"",
         "build": "react-scripts build",
+        "start": "nodemon ./src/server/server.js",
         "test": "react-scripts test",
         "eject": "react-scripts eject"
     },

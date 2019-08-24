@@ -1,12 +1,16 @@
-const app = require('express')();
+const express = require('express');
+const fallback = require('express-history-api-fallback')
+const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const cors = require('cors');
 const _ = require('lodash');
 
 server.listen(8000, () => console.log('connected to port 8000!'));
-
-app.use(cors());
+app
+    .use(express.static('build'))
+    .use(cors())
+    .use(fallback('index.html', { root: 'build' }))
 
 const rooms = {};
 
