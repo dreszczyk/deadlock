@@ -6,7 +6,9 @@ const io = require('socket.io')(server);
 const cors = require('cors');
 const _ = require('lodash');
 
-server.listen(8000, () => console.log('connected to port 8000!'));
+const port = process.env.PORT || 5000;
+
+server.listen(port, () => console.log(`connected to port ${port}!`));
 app
     .use(express.static('build'))
     .use(cors())
