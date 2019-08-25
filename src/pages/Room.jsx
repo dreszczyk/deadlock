@@ -4,6 +4,11 @@ import { Typography, Button, notification, Row, Col, Divider, Badge, Result } fr
 import { QRCode } from 'react-qr-svg';
 import { Link } from 'react-router-dom';
 import { isEmpty, get } from 'lodash';
+import Sound from 'react-sound';
+
+import clockTicking from '../static/clock-ticking.mp3';
+import bell from '../static/bell.mp3';
+import shot from '../static/shot.mp3';
 
 import {
     Container,
@@ -184,6 +189,26 @@ class Room extends Component {
                 subTitle={this.state.message.description}
             />
         ) : '';
+        const soundWarmup = this.state.gameState === 'WARMUP' ? (
+            <Sound
+                url={clockTicking}
+                playStatus={'PLAYING'}
+            />
+        ) : '';
+        const soundShootout = this.state.gameState === 'SHOOTOUT' ? (
+            <Sound
+                url={bell}
+                playStatus={'PLAYING'}
+                loop={false}
+            />
+        ) : '';
+        const shotSound = !isEmpty(this.state.message) ? (
+            <Sound
+                url={shot}
+                playStatus={'PLAYING'}
+                loop={false}
+            />
+        ) : '';
         return (
             <StyledContainer>
                 <Title level={3} style={{ marginTop: '30px'}}>
@@ -219,6 +244,9 @@ class Room extends Component {
                         opuść pokój
                     </Button>
                 </ButtonGroup>
+                {soundWarmup}
+                {soundShootout}
+                {shotSound}
             </StyledContainer>
         );
     }

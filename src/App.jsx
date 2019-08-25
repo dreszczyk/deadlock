@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import styled from 'styled-components';
 import 'antd/dist/antd.css';
 import io from 'socket.io-client';
-import _ from 'lodash';
 import {
     BrowserRouter as Router,
     Route
@@ -47,7 +46,7 @@ const HeaderStyled = styled(Header)`
     text-align: center;
 `;
 
-const socket = io(process.env.PORT ? window.location.origin : 'http://192.168.1.185:5000');
+const socket = io(window.location.origin + !process.env.PORT ? ':5000' : '');
 
 class AppRoot extends Component {
     componentDidMount() {
