@@ -39,6 +39,7 @@ io.on('connection', socket => {
         }
     });
     socket.on('JOIN_ROOM', ({ roomName }, callback) => {
+        console.log('PING_SERVER', JSON.stringify({ roomName }, null, 4));
         if (_.get(rooms, roomName, false)) {
             socket.join(roomName);
             callback({ status: 'OK', roomName });
@@ -48,10 +49,12 @@ io.on('connection', socket => {
             callback({ status: 'ERROR', errorMessage: `Nie ma takiego pokoju: ${roomName}` });
         }
     });
-    socket.on('PLAYER_JOIN_ROOM', ({ roomName, playerId }, callback) => {
+    socket.on('PLAYER_JOIN_ROOM', ({ roomName, playerId, time }, callback) => {
+        console.log('PLAYER_JOIN_ROOM', JSON.stringify({ roomName, playerId, time }, null, 4));
         if (_.get(rooms, roomName, false)) {
             socket.join(roomName);
-            _.set(rooms, `${roomName}.players.player${playerId}`, { connected: true, socketId: socket.id });
+            const ping = new Date().getTime() - time > 0 ? new Date().getTime() - time : 0;
+            _.set(rooms, `${roomName}.players.player${playerId}`, { connected: true, socketId: socket.id, ping });
             const roomData = { ...rooms[roomName], roomName };
             callback({ status: 'OK', ...roomData });
             io.to(roomName).emit('ROOM_UPDATE', roomData);
@@ -61,7 +64,7 @@ io.on('connection', socket => {
     });
     socket.on('PLAYER_LEAVE_ROOM', ({ roomName, playerId }) => {
         if (_.get(rooms, roomName, false)) {
-            _.set(rooms, `${roomName}.players.player${playerId}`, { connected: false });
+            _.set(rooms, `${roomName}.players.player${playerId}.connected`, false);
             const roomData = { ...rooms[roomName], roomName };
             io.to(roomName).emit('ROOM_UPDATE', roomData);
         }
@@ -69,6 +72,15 @@ io.on('connection', socket => {
     socket.on('SHOOT', ({ roomName, playerId }) => {
         if (_.get(rooms, roomName, false)) {
             io.to(roomName).emit('PLAYER_SHOT', playerId);
+        }
+    });
+    socket.on('PING_SERVER', ({ roomName, playerId, time }) => {
+        console.log('PING_SERVER', JSON.stringify({ roomName, playerId, time }, null, 4));
+        if (_.get(rooms, roomName, false)) {
+            const ping = new Date().getTime() - time > 0 ? new Date().getTime() - time : 0;
+            _.set(rooms, `${roomName}.players.player${playerId}.ping`, ping);
+            const roomData = { ...rooms[roomName], roomName };
+            io.to(roomName).emit('ROOM_UPDATE', roomData);
         }
     });
 });

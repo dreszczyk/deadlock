@@ -1,6 +1,6 @@
 import React, { Component, Fragment } from 'react';
 import styled from 'styled-components';
-import { Typography, Button, notification, Row, Col } from 'antd';
+import { Typography, Button, notification, Row, Col, Divider, Badge } from 'antd';
 import { QRCode } from 'react-qr-svg';
 import { Link } from 'react-router-dom';
 import _ from 'lodash';
@@ -10,6 +10,7 @@ import {
 } from '../components';
 
 const { Title } = Typography;
+const ButtonGroup = Button.Group;
 
 const StyledContainer = styled(Container)`
     text-align: center;
@@ -22,16 +23,15 @@ const SmallTitle = styled.small`
     display: block;
 `;
 
-const BigTrigger = styled.div`
-    width: 70%;
-    height: 300px;
-    background-color: red;
+const PlayerState = styled.div`
+    height: 200px;
+    width: 200px;
+    background-color: #dbe5ef;
     pointer-events: none;
     margin: 0 auto;
-    &:active,
-    &.active {
-        background-color: black;
-    }
+    line-height: 200px;
+    text-align: center;
+    margin-bottom: 5px;
 `;
 
 const errorNotification = (message) => {
@@ -50,6 +50,12 @@ class Room extends Component {
         players: {},
         player1Trigger: false,
         player2Trigger: false,
+        urlPrefix: window.location.origin,
+    }
+
+    componentDidUpdate() {
+        console.log(this.state);
+        
     }
 
     componentDidMount() {
@@ -57,6 +63,7 @@ class Room extends Component {
             if (status === 'OK') {
                 infoNotification(`Dołączono do pokoju ${roomName}!`)
             } else {
+                this.props.history.push('/');
                 errorNotification(errorMessage);
             }
         });
@@ -76,75 +83,71 @@ class Room extends Component {
         });
     }
 
+    getPlayerProfile = (playerNo) => {
+        const isConnected = _.get(this.state, `players.player${playerNo}.connected`, false);
+        const playerLink = `/joinGame/${this.state.roomName}/${playerNo}`;
+        if (isConnected) {
+            const ping = _.get(this.state, `players.player${playerNo}.ping`, 0);
+            let pingColor = '#52c41a';
+            if (ping > 20) {
+                pingColor = '#ff8d3f'
+            }
+            if (ping > 50) {
+                pingColor = '#ff3f3f'
+            }
+            return (
+                <Fragment>
+                    <Badge
+                        count={ping}
+                        showZero
+                        style={{ backgroundColor: pingColor }}
+                    >
+                        <PlayerState>
+                            połączony
+                        </PlayerState>
+                    </Badge>
+                    <SmallTitle>gracz {playerNo}</SmallTitle>
+                </Fragment>
+            )
+        }
+        return (
+            <Fragment>
+                <Link to={playerLink} target='_blank'>
+                    <QRCode
+                        bgColor='#FFFFFF'
+                        fgColor='#001529'
+                        level='Q'
+                        style={{ width: 200 }}
+                        value={encodeURI(this.state.urlPrefix + playerLink)}
+                    />
+                </Link>
+                <SmallTitle>gracz {playerNo}</SmallTitle>
+            </Fragment>
+        )
+    }
+
     render() {
-        const prefix = window.location.origin;
-        const playerOneLink = `/joinGame/${this.state.roomName}/1`;
-        const playerTwoLink = `/joinGame/${this.state.roomName}/2`;
-
-        const playerOneProfile = _.get(this.state, 'players.player1.connected', false) ? (
-            <Fragment>
-                <Title level={4}>Połączony!</Title>
-                <BigTrigger
-                    className={this.state.player1Trigger && 'active'}
-                />
-            </Fragment>
-        ) : (
-            <Fragment>
-                <Title level={4}>Dołącz jako gracz 1</Title>
-                <Link to={playerOneLink} target='_blank'>
-                    <QRCode
-                        bgColor='#FFFFFF'
-                        fgColor='#001529'
-                        level='Q'
-                        style={{ width: 256 }}
-                        value={encodeURI(prefix + playerOneLink)}
-                    />
-                </Link>
-            </Fragment>
-        );
-
-        const playerTwoProfile = _.get(this.state, 'players.player2.connected', false) ? (
-            <Fragment>
-                <Title level={4}>Połączony!</Title>
-                <BigTrigger
-                    className={this.state.player2Trigger && 'active'}
-                />
-            </Fragment>
-        ) : (
-            <Fragment>
-                <Title level={4}>Dołącz jako gracz 2</Title>
-                <Link to={playerTwoLink} target='_blank'>
-                    <QRCode
-                        bgColor='#FFFFFF'
-                        fgColor='#001529'
-                        level='Q'
-                        style={{ width: 256 }}
-                        value={encodeURI(prefix + playerTwoLink)}
-                    />
-                </Link>
-            </Fragment>
-        );
         return (
             <StyledContainer>
-                <Title level={3}>
-                    <SmallTitle>witaj w pokoju</SmallTitle>
+                <Title level={3} style={{ marginTop: '30px'}}>
+                    <SmallTitle>jesteś w pokoju</SmallTitle>
                     {this.state.roomName}
                 </Title>
+                <Divider style={{ margin: '50px 0'}} />
                 <Row>
                     <Col span={12}>
-                        {playerOneProfile}
+                        {this.getPlayerProfile(1)}
                     </Col>
-                    <Col span={12}>
-                        {playerTwoProfile}
+                    <Col span={12} style={{ borderLeft: '1px solid #e8e8e8'}}>
+                        {this.getPlayerProfile(2)}
                     </Col>
                 </Row>
-                <Button
-                    onClick={() => {
-                        this.props.history.push('/');
-                    }}
-                >
-                    wyjdź
-                </Button>
+                <Divider style={{ margin: '50px 0 30px 0'}} />
+                <ButtonGroup>
+                    <Button icon='poweroff' onClick={() => { this.props.history.push('/') }}>
+                        opuść pokój
+                    </Button>
+                </ButtonGroup>
             </StyledContainer>
         );
     }

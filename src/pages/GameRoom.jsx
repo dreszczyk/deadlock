@@ -49,17 +49,27 @@ class GameRoom extends Component {
         const playData = {
             roomName: this.state.roomName,
             playerId: this.state.playerId,
+            time: new Date().getTime(),
         };
         this.props.socket.emit('PLAYER_JOIN_ROOM', playData, this.joinCallback);
         window.addEventListener('beforeunload', () => {
             this.props.socket.emit('PLAYER_LEAVE_ROOM', playData);
         });
+        setInterval(() => {
+            const playData = {
+                roomName: this.state.roomName,
+                playerId: this.state.playerId,
+                time: new Date().getTime(),
+            };
+            this.props.socket.emit('PING_SERVER', playData);
+        }, 2000);
     }
 
     joinCallback = ({ status, roomName, errorMessage }) => {
         if (status === 'OK') {
             infoNotification(`Dołączono do pokoju ${roomName}!`)
         } else {
+            this.props.history.push('/');
             errorNotification(errorMessage);
         }
     }
