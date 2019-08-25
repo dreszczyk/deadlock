@@ -4,7 +4,7 @@ const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const cors = require('cors');
-const _ = require('lodash');
+const { get, set, findKey } = require('lodash');
 
 const port = process.env.PORT || 5000;
 
@@ -15,11 +15,18 @@ app
     .use(fallback('index.html', { root: 'build' }))
 
 const rooms = {};
+const roomTimers = {};
+
+const getRandomShootoutTime = () => {
+    const minTime = 2 * 1000;
+    const maxTime = 5 * 1000;
+    return Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
+}
 
 io.on('connection', socket => {
     socket.on('disconnect', () => {
-       const playerOneDisconnected = _.findKey(rooms, room => _.get(room, 'players.player1.socketId', '') === socket.id);
-       const playerTwoDisconnected = _.findKey(rooms, room => _.get(room, 'players.player2.socketId', '') === socket.id);
+       const playerOneDisconnected = findKey(rooms, room => get(room, 'players.player1.socketId', '') === socket.id);
+       const playerTwoDisconnected = findKey(rooms, room => get(room, 'players.player2.socketId', '') === socket.id);
        if (playerOneDisconnected) {
            rooms[playerOneDisconnected].players.player1.connected = false;
        }
@@ -31,7 +38,7 @@ io.on('connection', socket => {
        io.to(roomName).emit('ROOM_UPDATE', roomData);
     });
     socket.on('CREATE_ROOM', ({ roomName }, callback) => {
-        if (_.get(rooms, roomName, false)) {
+        if (get(rooms, roomName, false)) {
             callback({ status: 'ERROR', errorMessage: 'Już jest taki pokój!' })
         } else {
             rooms[roomName] = {};
@@ -39,8 +46,7 @@ io.on('connection', socket => {
         }
     });
     socket.on('JOIN_ROOM', ({ roomName }, callback) => {
-        console.log('PING_SERVER', JSON.stringify({ roomName }, null, 4));
-        if (_.get(rooms, roomName, false)) {
+        if (get(rooms, roomName, false)) {
             socket.join(roomName);
             callback({ status: 'OK', roomName });
             const roomData = { ...rooms[roomName], roomName };
@@ -49,12 +55,10 @@ io.on('connection', socket => {
             callback({ status: 'ERROR', errorMessage: `Nie ma takiego pokoju: ${roomName}` });
         }
     });
-    socket.on('PLAYER_JOIN_ROOM', ({ roomName, playerId, time }, callback) => {
-        console.log('PLAYER_JOIN_ROOM', JSON.stringify({ roomName, playerId, time }, null, 4));
-        if (_.get(rooms, roomName, false)) {
+    socket.on('PLAYER_JOIN_ROOM', ({ roomName, playerId }, callback) => {
+        if (get(rooms, roomName, false)) {
             socket.join(roomName);
-            const ping = new Date().getTime() - time > 0 ? new Date().getTime() - time : 0;
-            _.set(rooms, `${roomName}.players.player${playerId}`, { connected: true, socketId: socket.id, ping });
+            set(rooms, `${roomName}.players.player${playerId}`, { connected: true, socketId: socket.id });
             const roomData = { ...rooms[roomName], roomName };
             callback({ status: 'OK', ...roomData });
             io.to(roomName).emit('ROOM_UPDATE', roomData);
@@ -63,23 +67,63 @@ io.on('connection', socket => {
         }
     });
     socket.on('PLAYER_LEAVE_ROOM', ({ roomName, playerId }) => {
-        if (_.get(rooms, roomName, false)) {
-            _.set(rooms, `${roomName}.players.player${playerId}.connected`, false);
+        if (get(rooms, roomName, false)) {
+            set(rooms, `${roomName}.players.player${playerId}.connected`, false);
             const roomData = { ...rooms[roomName], roomName };
             io.to(roomName).emit('ROOM_UPDATE', roomData);
         }
     });
-    socket.on('SHOOT', ({ roomName, playerId }) => {
-        if (_.get(rooms, roomName, false)) {
-            io.to(roomName).emit('PLAYER_SHOT', playerId);
+    socket.on('PING_PLAYERS', ({ roomName }) => {
+        if (get(rooms, roomName, false)) {
+            io.to(roomName).emit('PING_REQUEST');
+            set(rooms, `${roomName}.pingTime`, Date.now());
         }
     });
-    socket.on('PING_SERVER', ({ roomName, playerId, time }) => {
-        console.log('PING_SERVER', JSON.stringify({ roomName, playerId, time }, null, 4));
-        if (_.get(rooms, roomName, false)) {
-            const ping = new Date().getTime() - time > 0 ? new Date().getTime() - time : 0;
-            _.set(rooms, `${roomName}.players.player${playerId}.ping`, ping);
+    socket.on('PONG', ({ roomName, playerId }) => {
+        if (get(rooms, roomName, false)) {
+            const time = Date.now();
+            const playerPing = time - get(rooms, `${roomName}.pingTime`, time);
+            set(rooms, `${roomName}.players.player${playerId}.ping`, playerPing);
+            set(rooms, `${roomName}.players.player${playerId}.connected`, true);
             const roomData = { ...rooms[roomName], roomName };
+            io.to(roomName).emit('ROOM_UPDATE', roomData);
+        }
+    });
+    socket.on('START_GAME', ({ roomName }) => {
+        if (get(rooms, roomName, false)) {
+            const roomData = { ...rooms[roomName], roomName, gameState: 'WARMUP' };
+            io.to(roomName).emit('ROOM_UPDATE', roomData);
+            set(rooms, `${roomName}.gameState`, 'WARMUP');
+            const shootoutTime = getRandomShootoutTime();
+            roomTimers[roomName] = setTimeout(() => {
+                const roomData = { ...rooms[roomName], roomName, gameState: 'SHOOTOUT' };
+                io.to(roomName).emit('ROOM_UPDATE', roomData);
+                set(rooms, `${roomName}.shootoutTime`, Date.now());
+                set(rooms, `${roomName}.gameState`, 'SHOOTOUT');
+            }, shootoutTime);
+        }
+    });
+    socket.on('PLAYER_SHOT', ({ roomName, playerId }) => {
+        if (get(rooms, roomName, false)) {
+            const message = {};
+            if (get(rooms, `${roomName}.gameState`, 'WARMUP') === 'WARMUP') {
+                set(rooms, `${roomName}.gameState`, 'IDLE');
+                message.type = 'warning';
+                message.winner = playerId === 1 ? 2 : 1;
+                message.description = `Gracz ${playerId} zbyt wcześnie pociągnął za spust.`
+            }
+            if (get(rooms, `${roomName}.gameState`, 'WARMUP') === 'SHOOTOUT') {
+                const time = Date.now();
+                const shootoutTime = get(rooms, `${roomName}.shootoutTime`);
+                const playerPing = get(rooms, `${roomName}.players.player${playerId}.ping`, 0);
+                const playerReflexTime = time - shootoutTime - playerPing;
+                set(rooms, `${roomName}.gameState`, 'IDLE');
+                message.type = 'success';
+                message.winner = playerId;
+                message.description = `Gracz ${playerId} był szybszy i wygrał z czasem ${playerReflexTime / 1000}s.`
+            }
+            clearTimeout(roomTimers[roomName]);
+            const roomData = { ...rooms[roomName], roomName, message };
             io.to(roomName).emit('ROOM_UPDATE', roomData);
         }
     });

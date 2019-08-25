@@ -49,20 +49,20 @@ class GameRoom extends Component {
         const playData = {
             roomName: this.state.roomName,
             playerId: this.state.playerId,
-            time: new Date().getTime(),
         };
         this.props.socket.emit('PLAYER_JOIN_ROOM', playData, this.joinCallback);
         window.addEventListener('beforeunload', () => {
             this.props.socket.emit('PLAYER_LEAVE_ROOM', playData);
         });
-        setInterval(() => {
-            const playData = {
-                roomName: this.state.roomName,
-                playerId: this.state.playerId,
-                time: new Date().getTime(),
-            };
-            this.props.socket.emit('PING_SERVER', playData);
-        }, 2000);
+        this.props.socket.on('PING_REQUEST', () => {
+            this.props.socket.emit('PONG', playData);
+        });
+        this.props.socket.on('ROOM_UPDATE', (newRoomData) => {
+            this.setState({ ...newRoomData })
+        });
+    }
+    componentDidUpdate() {
+        console.log(this.state);
     }
 
     joinCallback = ({ status, roomName, errorMessage }) => {
@@ -79,7 +79,7 @@ class GameRoom extends Component {
             roomName: this.state.roomName,
             playerId: this.state.playerId,
         };
-        this.props.socket.emit('SHOOT', playData);
+        this.props.socket.emit('PLAYER_SHOT', playData);
     }
 
     render() {
