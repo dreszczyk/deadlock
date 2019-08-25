@@ -47,8 +47,7 @@ const HeaderStyled = styled(Header)`
     text-align: center;
 `;
 
-const socketAddress = _.get(process, 'env.PORT', false) ? window.location.origin : 'http://192.168.1.185:5000/';
-const socket = io(socketAddress);
+const socket = io(window.location.origin);
 
 class AppRoot extends Component {
     componentDidMount() {
