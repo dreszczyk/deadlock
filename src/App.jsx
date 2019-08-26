@@ -37,6 +37,10 @@ const StyledTitle = styled(Title)`
     text-transform: uppercase;
     line-height: 64px !important;
     margin-left: 35px; // usuwa offset po letter-spacing
+    @media only screen and (max-width: 400px) {
+        letter-spacing: 10px;
+        margin-left: 10px; // usuwa offset po letter-spacing
+    }
 `;
 
 const HeaderStyled = styled(Header)`

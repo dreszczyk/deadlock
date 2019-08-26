@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import styled from 'styled-components';
+import mobile from 'is-mobile';
 import { Typography, notification } from 'antd';
 
 import {
@@ -10,6 +11,13 @@ const { Title } = Typography;
 
 const StyledContainer = styled(Container)`
     text-align: center;
+    user-select: none;
+    h4 {
+        word-break: break-word;
+        span {
+            margin-bottom: 15px;
+        }
+    }
 `
 
 const SmallTitle = styled.small`
@@ -21,7 +29,7 @@ const SmallTitle = styled.small`
 
 const BigTrigger = styled.div`
     width: 100%;
-    height: 300px;
+    height: 200px;
     background-color: red;
     &:active,
     &.active {
@@ -44,7 +52,6 @@ class GameRoom extends Component {
         roomName: this.props.match.params.roomId || '?',
         playerId: this.props.match.params.playerId || '?',
     }
-
     componentDidMount() {
         const playData = {
             roomName: this.state.roomName,
@@ -83,15 +90,17 @@ class GameRoom extends Component {
     }
 
     render() {
+        const isMobile = mobile();
         return (
             <StyledContainer>
-                <Title level={3}>
+                <Title level={4}>
                     <SmallTitle>grasz w pokoju</SmallTitle>
                     {this.state.roomName}
-                    <BigTrigger
-                        onClick={this.shoot}
-                    />
                 </Title>
+                <BigTrigger
+                    onTouchStart={isMobile ? this.shoot : undefined}
+                    onClick={!isMobile ? this.shoot : undefined}
+                />
             </StyledContainer>
         );
     }

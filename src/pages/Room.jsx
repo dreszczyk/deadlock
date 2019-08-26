@@ -6,13 +6,23 @@ import { Link } from 'react-router-dom';
 import { isEmpty, get } from 'lodash';
 import Sound from 'react-sound';
 
-import clockTicking from '../static/clock-ticking.mp3';
-import bell from '../static/bell.mp3';
-import shot from '../static/shot.mp3';
-
 import {
     Container,
 } from '../components';
+
+import clockTicking from '../static/clock-ticking.mp3';
+import bell from '../static/bell.mp3';
+
+import shot1 from '../static/shot1.mp3';
+import shot2 from '../static/shot2.mp3';
+import shot3 from '../static/shot3.mp3';
+import shot4 from '../static/shot4.mp3';
+import shot6 from '../static/shot6.mp3';
+
+const shotList = [
+    shot1, shot2, shot3,
+    shot4, shot6,
+];
 
 const { Title } = Typography;
 const ButtonGroup = Button.Group;
@@ -189,9 +199,17 @@ class Room extends Component {
         this.props.socket.emit('START_GAME', { roomName: this.state.roomName });
     }
 
+    randomShot = () => {
+        const shotsCount = shotList.length;
+        const random = Math.floor(Math.random() * shotsCount);
+        console.log('random', random);
+        
+        return shotList[random];
+    }
+
     shootBlanks = (playerNo) => {
         const trigger = Number(playerNo) === 1 ? 'playerOneTrigger' : 'playerTwoTrigger';
-        const audio = new Audio(shot);
+        const audio = new Audio(this.randomShot());
         audio.play();
         this.setState((state) => ({
             [trigger]: state[trigger] + 1,
