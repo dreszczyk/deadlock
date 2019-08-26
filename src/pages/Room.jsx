@@ -29,6 +29,16 @@ const SmallTitle = styled.small`
 `;
 
 const PlayerState = styled.div`
+    @keyframes shoot {
+        from {
+            transform: scale(1.1);
+            background-color: #ff6600;
+        }
+        to {
+            transform: scale(1.0);
+            background-color: #dbe5ef;
+        }
+    }
     height: 200px;
     width: 200px;
     background-color: #dbe5ef;
@@ -37,6 +47,10 @@ const PlayerState = styled.div`
     line-height: 200px;
     text-align: center;
     margin-bottom: 5px;
+    animation-name: shoot;
+    animation-duration: 0.3s;
+    animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation-iteration-count: 1;
 `;
 
 const errorNotification = (message) => {
@@ -56,6 +70,8 @@ class Room extends Component {
         players: {},
         playerOneConnected: false,
         playerTwoConnected: false,
+        playerOneTrigger: 0,
+        playerTwoTrigger: 0,
         urlPrefix: window.location.origin,
         playersConnected: 0,
         message: {},
@@ -64,6 +80,8 @@ class Room extends Component {
     pingInterval = {};
 
     componentDidUpdate(prevProps, prevState) {
+        console.log(this.state);
+        
         //! obsługa połączeń konkretnych graczy
         const playerOneSelector = 'players.player1.connected';
         const playerTwoSelector = 'players.player2.connected';
@@ -90,8 +108,15 @@ class Room extends Component {
         }
 
         //! czyszczenie danych
-        if (prevState.gameState === 'IDLE' && this.state.gameState === 'WARMUP') {
+        const endgameToIdle = prevState.gameState === 'ENDGAME' && this.state.gameState === 'IDLE';
+        const endgameToWarmup = prevState.gameState === 'ENDGAME' && this.state.gameState === 'WARMUP';
+        if (endgameToIdle || endgameToWarmup) {
             this.setState({ message: {} })
+        }
+
+        if (prevState.gameState !== 'SHOOTOUT' && this.state.gameState === 'SHOOTOUT') {
+            const audio = new Audio(bell);
+            audio.play();
         }
     }
 
@@ -107,6 +132,7 @@ class Room extends Component {
         this.props.socket.on('ROOM_UPDATE', (newRoomData) => {
             this.setState({ ...newRoomData })
         });
+        this.props.socket.on('PEWPEW', this.shootBlanks);
         this.pingInterval = setInterval(() => {
             this.props.socket.emit('PING_PLAYERS', { roomName: this.state.roomName });
         }, 2000);
@@ -117,6 +143,7 @@ class Room extends Component {
         const playerLink = `/joinGame/${this.state.roomName}/${playerNo}`;
         if (isConnected) {
             const ping = get(this.state, `players.player${playerNo}.ping`, 0);
+            const trigger = Number(playerNo) === 1 ? 'playerOneTrigger' : 'playerTwoTrigger';
             let pingColor = '#52c41a';
             if (ping > 20) {
                 pingColor = '#ff8d3f'
@@ -132,7 +159,9 @@ class Room extends Component {
                         showZero
                         style={{ backgroundColor: pingColor }}
                     >
-                        <PlayerState>
+                        <PlayerState
+                            key={`Player_${playerNo}_${this.state[trigger]}`}
+                        >
                             połączony
                         </PlayerState>
                     </Badge>
@@ -158,6 +187,15 @@ class Room extends Component {
 
     startGame = () => {
         this.props.socket.emit('START_GAME', { roomName: this.state.roomName });
+    }
+
+    shootBlanks = (playerNo) => {
+        const trigger = Number(playerNo) === 1 ? 'playerOneTrigger' : 'playerTwoTrigger';
+        const audio = new Audio(shot);
+        audio.play();
+        this.setState((state) => ({
+            [trigger]: state[trigger] + 1,
+        }))
     }
 
     render() {
@@ -193,20 +231,6 @@ class Room extends Component {
             <Sound
                 url={clockTicking}
                 playStatus={'PLAYING'}
-            />
-        ) : '';
-        const soundShootout = this.state.gameState === 'SHOOTOUT' ? (
-            <Sound
-                url={bell}
-                playStatus={'PLAYING'}
-                loop={false}
-            />
-        ) : '';
-        const shotSound = !isEmpty(this.state.message) ? (
-            <Sound
-                url={shot}
-                playStatus={'PLAYING'}
-                loop={false}
             />
         ) : '';
         return (
@@ -245,8 +269,6 @@ class Room extends Component {
                     </Button>
                 </ButtonGroup>
                 {soundWarmup}
-                {soundShootout}
-                {shotSound}
             </StyledContainer>
         );
     }

@@ -41,7 +41,7 @@ io.on('connection', socket => {
         if (get(rooms, roomName, false)) {
             callback({ status: 'ERROR', errorMessage: 'Już jest taki pokój!' })
         } else {
-            rooms[roomName] = {};
+            rooms[roomName] = { gameState: 'IDLE' };
             callback({ status: 'OK' })
         }
     });
@@ -106,18 +106,22 @@ io.on('connection', socket => {
     socket.on('PLAYER_SHOT', ({ roomName, playerId }) => {
         if (get(rooms, roomName, false)) {
             const message = {};
-            if (get(rooms, `${roomName}.gameState`, 'WARMUP') === 'WARMUP') {
-                set(rooms, `${roomName}.gameState`, 'IDLE');
+            if (['IDLE', 'ENDGAME'].includes(get(rooms, `${roomName}.gameState`))) {
+                io.to(roomName).emit('PEWPEW', playerId);
+                return;
+            }
+            if (get(rooms, `${roomName}.gameState`) === 'WARMUP') {
+                set(rooms, `${roomName}.gameState`, 'ENDGAME');
                 message.type = 'warning';
-                message.winner = playerId === 1 ? 2 : 1;
+                message.winner = Number(playerId) === 1 ? 2 : 1;
                 message.description = `Gracz ${playerId} zbyt wcześnie pociągnął za spust.`
             }
-            if (get(rooms, `${roomName}.gameState`, 'WARMUP') === 'SHOOTOUT') {
+            if (get(rooms, `${roomName}.gameState`) === 'SHOOTOUT') {
                 const time = Date.now();
                 const shootoutTime = get(rooms, `${roomName}.shootoutTime`);
                 const playerPing = get(rooms, `${roomName}.players.player${playerId}.ping`, 0);
                 const playerReflexTime = time - shootoutTime - playerPing;
-                set(rooms, `${roomName}.gameState`, 'IDLE');
+                set(rooms, `${roomName}.gameState`, 'ENDGAME');
                 message.type = 'success';
                 message.winner = playerId;
                 message.description = `Gracz ${playerId} był szybszy i wygrał z czasem ${playerReflexTime / 1000}s.`
@@ -125,6 +129,7 @@ io.on('connection', socket => {
             clearTimeout(roomTimers[roomName]);
             const roomData = { ...rooms[roomName], roomName, message };
             io.to(roomName).emit('ROOM_UPDATE', roomData);
+            io.to(roomName).emit('PEWPEW', playerId);
         }
     });
 });

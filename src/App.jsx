@@ -46,7 +46,7 @@ const HeaderStyled = styled(Header)`
     text-align: center;
 `;
 
-const socket = io(window.location.origin);
+const socket = io(window.location.origin.replace('3000', '5000'));
 
 class AppRoot extends Component {
     componentDidMount() {
