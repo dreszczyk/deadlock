@@ -1,14 +1,20 @@
 const express = require('express');
 const fallback = require('express-history-api-fallback')
 const app = express();
-const server = require('http').Server(app);
-const io = require('socket.io')(server);
+// const fs = require('fs');
+// const privateKey  = fs.readFileSync('./src/server/server.key', 'utf8');
+// const certificate = fs.readFileSync('./src/server/server.cert', 'utf8');
+// const credentials = { key: privateKey, cert: certificate };
+// const https = require('https').Server(credentials, app);
+// const io = require('socket.io')(https);
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
 const cors = require('cors');
 const { get, set, findKey } = require('lodash');
 
 const port = process.env.PORT || 5000;
 
-server.listen(port, () => console.log(`connected to port ${port}!`));
+http.listen(port, () => console.log(`connected to port ${port}!`));
 app
     .use(express.static('build'))
     .use(cors())
@@ -85,6 +91,19 @@ io.on('connection', socket => {
             const playerPing = time - get(rooms, `${roomName}.pingTime`, time);
             set(rooms, `${roomName}.players.player${playerId}.ping`, playerPing);
             set(rooms, `${roomName}.players.player${playerId}.connected`, true);
+            const roomData = { ...rooms[roomName], roomName };
+            io.to(roomName).emit('ROOM_UPDATE', roomData);
+        }
+    });
+    socket.on('DEBUG', ({ roomName, ...stuff }) => {
+        console.log('DEBUG', stuff);
+        if (get(rooms, roomName, false)) {
+            io.to(roomName).emit('DEBUG_ACTION', stuff);
+        }
+    });
+    socket.on('UPDATE_PLAYER_STATE', ({ roomName, playerId, playerState }) => {
+        if (get(rooms, roomName, false)) {
+            set(rooms, `${roomName}.players.player${playerId}.playerState`, playerState);
             const roomData = { ...rooms[roomName], roomName };
             io.to(roomName).emit('ROOM_UPDATE', roomData);
         }

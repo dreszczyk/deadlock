@@ -61,16 +61,17 @@ const PlayerState = styled.div`
     animation-duration: 0.3s;
     animation-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
     animation-iteration-count: 1;
+    &.WAITING {
+        background-color: #b6ffa8;
+    }
 `;
 
 const errorNotification = (message) => {
-    notification.error({
-        message,
-    });
+    notification.error({ message, duration: 2 });
 };
 
 const infoNotification = (message) => {
-    notification.info({ message });
+    notification.info({ message, duration: 2 });
 };
 
 class Room extends Component {
@@ -90,9 +91,7 @@ class Room extends Component {
     pingInterval = {};
 
     componentDidUpdate(prevProps, prevState) {
-        console.log(this.state);
-        
-        //! obsługa połączeń konkretnych graczy
+        //! polączenie obu graczy naraz
         const playerOneSelector = 'players.player1.connected';
         const playerTwoSelector = 'players.player2.connected';
         const playerOneConnected = !get(prevState, playerOneSelector, false) &&  get(this.state, playerOneSelector, false);
@@ -107,7 +106,6 @@ class Room extends Component {
             this.setState({ playerTwoConnected })
         }
 
-        //! połączenie obu graczy naraz
         if (playerOneConnected || playerTwoConnected) {
             const connectedNumber = playerOneConnected && playerTwoConnected ? 2 : 1;
             this.setState((state) => ({ playersConnected: state.playersConnected + connectedNumber }))
@@ -116,12 +114,20 @@ class Room extends Component {
             const connectedNumber = playerOneConnected && playerTwoConnected ? 2 : 1;
             this.setState((state) => ({ playersConnected: state.playersConnected - connectedNumber }))
         }
+        
+        //! autoplay
+        const playerOneReady = get(this.state, 'players.player1.playerState', false) === 'WAITING';
+        const playerTwoReady = get(this.state, 'players.player2.playerState', false) === 'WAITING';
+        if (playerOneReady &&  playerTwoReady && this.state.gameState === 'IDLE') {
+            console.log('this.state', this.state);
+            this.startGame();
+        }
 
         //! czyszczenie danych
         const endgameToIdle = prevState.gameState === 'ENDGAME' && this.state.gameState === 'IDLE';
         const endgameToWarmup = prevState.gameState === 'ENDGAME' && this.state.gameState === 'WARMUP';
         if (endgameToIdle || endgameToWarmup) {
-            this.setState({ message: {} })
+            this.setState({ message: {} });
         }
 
         if (prevState.gameState !== 'SHOOTOUT' && this.state.gameState === 'SHOOTOUT') {
@@ -142,6 +148,9 @@ class Room extends Component {
         this.props.socket.on('ROOM_UPDATE', (newRoomData) => {
             this.setState({ ...newRoomData })
         });
+        this.props.socket.on('DEBUG_ACTION', (stuff) => {
+            console.log('DEBUG_ACTION', stuff);
+        });
         this.props.socket.on('PEWPEW', this.shootBlanks);
         this.pingInterval = setInterval(() => {
             this.props.socket.emit('PING_PLAYERS', { roomName: this.state.roomName });
@@ -149,10 +158,11 @@ class Room extends Component {
     }
 
     getPlayerProfile = (playerNo) => {
-        const isConnected = get(this.state, `players.player${playerNo}.connected`, false);
+        const player = get(this.state, `players.player${playerNo}`);
+        const isConnected = get(player, `connected`, false);
         const playerLink = `/joinGame/${this.state.roomName}/${playerNo}`;
         if (isConnected) {
-            const ping = get(this.state, `players.player${playerNo}.ping`, 0);
+            const ping = get(player, `ping`, 0);
             const trigger = Number(playerNo) === 1 ? 'playerOneTrigger' : 'playerTwoTrigger';
             let pingColor = '#52c41a';
             if (ping > 20) {
@@ -171,6 +181,7 @@ class Room extends Component {
                     >
                         <PlayerState
                             key={`Player_${playerNo}_${this.state[trigger]}`}
+                            className={get(player, `playerState`, 'IDLE')}
                         >
                             połączony
                         </PlayerState>
@@ -199,13 +210,7 @@ class Room extends Component {
         this.props.socket.emit('START_GAME', { roomName: this.state.roomName });
     }
 
-    randomShot = () => {
-        const shotsCount = shotList.length;
-        const random = Math.floor(Math.random() * shotsCount);
-        console.log('random', random);
-        
-        return shotList[random];
-    }
+    randomShot = () => shotList[Math.floor(Math.random() * shotList.length)]
 
     shootBlanks = (playerNo) => {
         const trigger = Number(playerNo) === 1 ? 'playerOneTrigger' : 'playerTwoTrigger';
@@ -268,7 +273,7 @@ class Room extends Component {
                         {this.getPlayerProfile(2)}
                     </Col>
                 </Row>
-                <Button
+                {/* <Button
                     icon='fire'
                     type="danger"
                     disabled={this.state.playersConnected !== 2}
@@ -279,7 +284,7 @@ class Room extends Component {
                     onClick={this.startGame}
                 >
                     rozpocznij grę
-                </Button>
+                </Button> */}
                 <Divider style={{ margin: '50px 0 30px 0'}} />
                 <ButtonGroup>
                     <Button icon='poweroff' onClick={() => { this.props.history.push('/') }}>
