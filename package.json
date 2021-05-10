@@ -10,7 +10,7 @@
         "express": "^4.17.1",
         "express-history-api-fallback": "^2.2.1",
         "is-mobile": "^2.1.0",
-        "lodash": "^4.17.15",
+        "lodash": "^4.17.21",
         "nodemon": "^1.19.1",
         "rc-collapse": "^1.11.6",
         "react": "^16.9.0",
